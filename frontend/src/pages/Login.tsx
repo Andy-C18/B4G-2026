@@ -13,13 +13,37 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Guard: Don't allow submission if already loading
+    if (loading) {
+      return;
+    }
+
     setError('');
+
+    // Validation checks
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required');
+      return;
+    }
+
     setLoading(true);
     try {
       await signIn(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
+      const errorMessage = err instanceof Error ? err.message : 'Sign in failed';
+      // Handle rate limit errors specifically
+      if (errorMessage.includes('429') || errorMessage.includes('rate limit') || errorMessage.includes('too many')) {
+        setError('Too many login attempts. Please wait a few minutes before trying again.');
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -78,7 +102,11 @@ export default function Login() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-2.5">
+            <button
+              type="submit"
+              disabled={loading || !email.trim() || !password}
+              className="btn-primary w-full py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>

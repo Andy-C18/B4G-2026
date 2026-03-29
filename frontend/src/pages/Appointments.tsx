@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import type { Appointment } from '../types';
 
 const STATUS_CONFIG = {
+  draft: { label: 'Draft', color: 'text-gray-700 bg-gray-50', icon: Clock },
   requested: { label: 'Requested', color: 'text-amber-700 bg-amber-50', icon: Clock },
   confirmed: { label: 'Confirmed', color: 'text-blue-700 bg-blue-50', icon: Calendar },
   done: { label: 'Done', color: 'text-green-700 bg-green-50', icon: CheckCircle },
@@ -21,12 +22,11 @@ export default function Appointments() {
   useEffect(() => {
     async function load() {
       if (!profile) return;
-      const col = profile.role === 'patient' ? 'patient_id' : 'doctor_id';
       const { data } = await supabase
-        .from('appointments')
-        .select('*, patient:patient_id(full_name,avatar_url), doctor:doctor_id(full_name,specialty), symptom_report:symptom_report_id(suggested_doctor_type,symptoms_text)')
-        .eq(col, profile.id)
-        .order('requested_at', { ascending: false });
+        .from('appointment_data')
+        .select('*')
+        .or(`patientId.eq.${profile.id},doctorId.eq.${profile.id}`)
+        .order('createdAt', { ascending: false });
       setAppointments((data as Appointment[]) || []);
       setLoading(false);
     }
@@ -40,16 +40,12 @@ export default function Appointments() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {profile?.role === 'patient' ? 'Track your appointment requests' : 'Manage patient appointments'}
-          </p>
+          <p className="text-gray-500 text-sm mt-1">Track and manage your appointments</p>
         </div>
-        {profile?.role === 'patient' && (
-          <Link to="/doctor-seek" className="btn-primary flex items-center gap-2">
-            <Stethoscope className="w-4 h-4" />
-            New Report
-          </Link>
-        )}
+        <Link to="/doctor-seek" className="btn-primary flex items-center gap-2">
+          <Stethoscope className="w-4 h-4" />
+          New Report
+        </Link>
       </div>
 
       {/* Filters */}
@@ -58,9 +54,8 @@ export default function Appointments() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${
-              filter === f ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${filter === f ? 'bg-primary-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
           >
             {f}
           </button>
@@ -73,18 +68,15 @@ export default function Appointments() {
         <div className="card text-center py-12">
           <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-300" />
           <p className="text-gray-500 font-medium">No appointments found</p>
-          {profile?.role === 'patient' && (
-            <Link to="/doctor-seek" className="btn-primary mt-4 inline-flex">
-              Start a Doctor Seek
-            </Link>
-          )}
+          <Link to="/doctor-seek" className="btn-primary mt-4 inline-flex">
+            Start a Doctor Seek
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((appt) => {
-            const cfg = STATUS_CONFIG[appt.status];
+            const cfg = STATUS_CONFIG[appt.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.draft;
             const Icon = cfg.icon;
-            const report = appt.symptom_report as { suggested_doctor_type?: string; symptoms_text?: string } | undefined;
             return (
               <Link
                 key={appt.id}
@@ -96,19 +88,15 @@ export default function Appointments() {
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900">
-                      {profile?.role === 'patient'
-                        ? `Dr. ${(appt.doctor as { full_name?: string })?.full_name || 'Unassigned'}`
-                        : (appt.patient as { full_name?: string })?.full_name}
-                    </p>
+                    <p className="font-medium text-gray-900">{appt.title || 'Appointment'}</p>
                     <p className="text-sm text-gray-500 truncate">
-                      {report?.suggested_doctor_type && (
-                        <span className="text-primary-600 font-medium">{report.suggested_doctor_type} · </span>
+                      {appt.recommended_speciality && (
+                        <span className="text-primary-600 font-medium">{appt.recommended_speciality} · </span>
                       )}
-                      {report?.symptoms_text?.slice(0, 60)}…
+                      {appt.reportType || 'appointment'}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(appt.requested_at).toLocaleDateString('en-US', {
+                      {new Date(appt.createdAt).toLocaleDateString('en-US', {
                         weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
                       })}
                     </p>

@@ -8,7 +8,7 @@ const router = Router();
 router.get('/', async (_req: Request, res: Response) => {
   const { data, error } = await supabase
     .from('forum_posts')
-    .select('*, author:author_id(full_name,role,avatar_url)')
+    .select('*, author:author_id(fullName)')
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
@@ -19,14 +19,14 @@ router.get('/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { data: post, error } = await supabase
     .from('forum_posts')
-    .select('*, author:author_id(full_name,role,avatar_url)')
+    .select('*, author:author_id(fullName)')
     .eq('id', id)
     .single();
   if (error) return res.status(404).json({ error: 'Post not found' });
 
   const { data: comments } = await supabase
     .from('forum_comments')
-    .select('*, author:author_id(full_name,role,avatar_url)')
+    .select('*, author:author_id(fullName)')
     .eq('post_id', id)
     .order('created_at', { ascending: true });
 

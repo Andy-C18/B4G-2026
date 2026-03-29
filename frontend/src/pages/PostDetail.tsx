@@ -23,14 +23,14 @@ export default function PostDetail() {
     if (!id) return;
     const { data: postData } = await supabase
       .from('forum_posts')
-      .select('*, author:author_id(full_name,role,avatar_url)')
+      .select('*, author:author_id(fullName)')
       .eq('id', id)
       .single();
     if (postData) setPost(postData as ForumPost);
 
     const { data: commentsData } = await supabase
       .from('forum_comments')
-      .select('*, author:author_id(full_name,role,avatar_url)')
+      .select('*, author:author_id(fullName)')
       .eq('post_id', id)
       .order('created_at', { ascending: true });
     setComments((commentsData as ForumComment[]) || []);
@@ -73,16 +73,11 @@ export default function PostDetail() {
       <div className="card">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm">
-            {author?.full_name?.[0] || 'U'}
+            {author?.fullName?.[0] || 'U'}
           </div>
           <div>
-            <p className="font-medium text-gray-800 text-sm">{author?.full_name || 'Unknown'}</p>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              {author?.role === 'doctor' && (
-                <span className="bg-blue-50 text-blue-600 px-1.5 rounded">Doctor</span>
-              )}
-              <span>{new Date(post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-            </div>
+            <p className="font-medium text-gray-800 text-sm">{author?.fullName || 'Unknown'}</p>
+            <span className="text-xs text-gray-400">{new Date(post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
           </div>
         </div>
 
@@ -111,7 +106,7 @@ export default function PostDetail() {
         <form onSubmit={handleComment} className="card mb-4">
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm flex-shrink-0">
-              {profile?.full_name?.[0] || 'U'}
+              {profile?.fullName?.[0] || 'U'}
             </div>
             <div className="flex-1">
               <textarea
@@ -135,16 +130,11 @@ export default function PostDetail() {
             return (
               <div key={comment.id} className="card flex gap-3">
                 <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">
-                  {cAuthor?.full_name?.[0] || 'U'}
+                  {cAuthor?.fullName?.[0] || 'U'}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-gray-800">{cAuthor?.full_name || 'Unknown'}</span>
-                      {cAuthor?.role === 'doctor' && (
-                        <span className="bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded text-xs">Doctor</span>
-                      )}
-                    </div>
+                    <span className="font-medium text-sm text-gray-800">{cAuthor?.fullName || 'Unknown'}</span>
                     <span className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
                   </div>
                   <p className="text-gray-700 text-sm whitespace-pre-wrap">{comment.content}</p>

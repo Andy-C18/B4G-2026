@@ -1,29 +1,30 @@
 export interface Profile {
   id: string;
-  role: 'patient' | 'doctor';
-  full_name: string;
-  avatar_url?: string;
-  specialty?: string;
-  bio?: string;
-  phone?: string;
-  date_of_birth?: string;
-  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
-  blood_type?: string;
-  allergies?: string[];
-  created_at: string;
-  updated_at: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  location: string;
+  gender: string;
+  createdAt: string;
+  age: number;
+  password: string;
 }
 
-export interface SymptomReport {
-  id: string;
-  patient_id: string;
-  symptoms_text: string;
-  photo_urls?: string[];
-  video_url?: string;
-  follow_up_answers?: Record<string, string>;
-  structured_report: StructuredReport;
-  suggested_doctor_type?: string;
-  created_at: string;
+export interface Patient extends Profile {
+  medicalHistory: Record<string, string>;
+}
+
+export interface Doctor extends Profile {
+  speciality: string;
+  practiceName: string;
+  rating: number;
+  reviewCount: number;
+  timeAvailable: Record<string, unknown>;
+}
+
+// Type guard to check if profile is a doctor
+export function isDoctor(profile: Patient | Doctor): profile is Doctor {
+  return 'speciality' in profile || 'practiceName' in profile;
 }
 
 export interface StructuredReport {
@@ -39,56 +40,81 @@ export interface StructuredReport {
 
 export interface Appointment {
   id: string;
-  patient_id: string;
-  doctor_id?: string;
-  symptom_report_id?: string;
-  status: 'requested' | 'confirmed' | 'done' | 'cancelled';
-  notes?: string;
-  requested_at: string;
+  patientId: string;
+  doctorId: string;
+  title?: string;
+  reportType?: string;
+  status: 'draft' | 'requested' | 'confirmed' | 'done' | 'cancelled';
+  needAsap?: boolean;
+  follow_up_questions?: Record<string, string>;
+  follow_up_answers?: Record<string, string>;
+  pre_appointment_report?: StructuredReport;
+  recommended_speciality?: string;
+  selected_time?: string;
+  post_appointment_report?: Record<string, unknown>;
+  doctor_rating?: number;
+  doctor_rating_text?: string;
+  createdAt: string;
+  requested_at?: string;
   completed_at?: string;
-  patient?: Profile;
-  doctor?: Profile;
-  symptom_report?: SymptomReport;
+  patient?: Patient;
+  doctor?: Doctor;
 }
 
 export interface MedicalRecord {
   id: string;
-  patient_id: string;
-  appointment_id?: string;
+  patientId: string;
+  patient_id?: string; // backward compatibility
+  appointmentId?: string;
+  appointment_id?: string; // backward compatibility
+  notes?: string;
+  diagnosis?: string;
+  medications?: Array<{ name: string; dosage?: string; frequency?: string }>;
   prescription_url?: string;
-  prescription_data?: PrescriptionData;
-  diagnosis?: string;
-  medications?: Medication[];
-  lab_results?: Record<string, unknown>;
-  notes?: string;
-  created_at: string;
-}
-
-export interface PrescriptionData {
-  raw_text?: string;
-  parsed_medications?: Medication[];
-  diagnosis?: string;
-  follow_up?: string;
-}
-
-export interface Medication {
-  name: string;
-  dosage?: string;
-  frequency?: string;
-  duration?: string;
-  notes?: string;
+  prescription_data?: Record<string, any>;
+  createdAt: string;
+  created_at?: string; // backward compatibility
 }
 
 export interface DoctorRating {
-  id: string;
-  appointment_id: string;
-  patient_id: string;
-  doctor_id: string;
+  appointmentId: string;
+  patientId: string;
+  doctorId: string;
   rating: number;
   comment?: string;
-  created_at: string;
-  patient?: Profile;
+  createdAt: string;
+  patient?: Patient;
+  doctor?: Doctor;
 }
+
+// export interface SymptomReport {
+//   id: string;
+//   patientId: string;
+//   reportType?: string;
+//   formatted_report?: StructuredReport;
+//   follow_up_questions?: Record<string, string>;
+//   follow_up_answers?: Record<string, string>;
+//   createdAt: string;
+// }
+
+// export interface MedicalRecord {
+//   id: string;
+//   patientId: string;
+//   appointmentId?: string;
+//   notes?: string;
+//   createdAt: string;
+// }
+
+// export interface DoctorRating {
+//   appointmentId: string;
+//   patientId: string;
+//   doctorId: string;
+//   rating: number;
+//   comment?: string;
+//   createdAt: string;
+//   patient?: Patient;
+//   doctor?: Doctor;
+// }
 
 export interface ForumPost {
   id: string;
@@ -100,8 +126,7 @@ export interface ForumPost {
   downvotes: number;
   created_at: string;
   updated_at: string;
-  author?: Profile;
-  comment_count?: number;
+  author?: { fullName: string };
 }
 
 export interface ForumComment {
@@ -111,7 +136,7 @@ export interface ForumComment {
   content: string;
   upvotes: number;
   created_at: string;
-  author?: Profile;
+  author?: { fullName: string };
 }
 
 export interface FollowUpQuestion {
