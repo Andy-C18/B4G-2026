@@ -29,9 +29,9 @@ export default function DoctorMatches({ reportId, speciality }: Props) {
     try {
       await bookDoctor(reportId, { doctorId, selected_time });
 
-      navigate('/patient-dashboard', {
+      navigate('/dashboard', {
         state: {
-          bookingSuccess: true,
+            bookingSuccess: true,
         },
       });
     } catch (err: any) {

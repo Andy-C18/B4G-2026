@@ -44,7 +44,7 @@ export interface Appointment {
   doctorId: string;
   title?: string;
   reportType?: string;
-  status: 'draft' | 'requested' | 'confirmed' | 'done' | 'cancelled';
+  status: 'draft' | 'requested' | 'booked' |'confirmed' | 'done' | 'cancelled';
   needAsap?: boolean;
   follow_up_questions?: Record<string, string>;
   follow_up_answers?: Record<string, string>;

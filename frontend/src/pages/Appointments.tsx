@@ -17,7 +17,9 @@ export default function Appointments() {
   const { profile } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'requested' | 'confirmed' | 'done' | 'cancelled'>('all');
+  const [filter, setFilter] = useState<'all' | 'requested' | 'booked' | 'confirmed' | 'done' | 'cancelled'>('all');
+
+
 
   useEffect(() => {
     async function load() {

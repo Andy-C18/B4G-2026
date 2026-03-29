@@ -61,8 +61,8 @@ export default function Login() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
             <Heart className="w-8 h-8 text-white fill-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">MedConnect</h1>
-          <p className="text-gray-500 mt-1">AI-powered patient healthcare</p>
+          <h1 className="text-3xl font-bold text-gray-900">Nurser-E</h1>
+          <p className="text-gray-500 mt-1">Doctor Visits Made Easy</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">

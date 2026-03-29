@@ -39,7 +39,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2 text-primary-600 font-bold text-xl">
             <Heart className="w-6 h-6 fill-primary-600" />
-            <span>MedConnect</span>
+            <span>Nurser-E</span>
           </Link>
 
           {/* Desktop nav */}
@@ -64,7 +64,7 @@ export default function Navbar() {
           <div className="flex items-center gap-3">
             {profile && (
               <span className="hidden sm:block text-sm text-gray-600">
-                {profile.full_name}
+                {profile.fullName}
                 <span className="ml-1 text-xs text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full capitalize">
                   {profile.role}
                 </span>

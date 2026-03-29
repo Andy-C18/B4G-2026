@@ -134,12 +134,12 @@ export default function Register() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4">
             <Heart className="w-8 h-8 text-white fill-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">MedConnect</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Nurser-E</h1>
           <p className="text-gray-500 mt-1">Create your account</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-6">Join MedConnect</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-6">Join Nurser-E</h2>
 
           {error && (
             <div className="flex items-center gap-2 bg-red-50 text-red-700 rounded-lg px-4 py-3 mb-4 text-sm">
