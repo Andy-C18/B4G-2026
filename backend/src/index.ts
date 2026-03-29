@@ -10,6 +10,7 @@ import appointmentsRouter from './routes/appointments';
 import forumRouter from './routes/forum';
 import profileRouter from './routes/profile';
 import reportsRouter from './routes/reports';
+import doctorsRouter from './routes/doctors';
 
 
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/appointments', appointmentsRouter);
 app.use('/api/forum', forumRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/doctors', doctorsRouter);
 
 // 404 handler
 app.use((_req, res) => {

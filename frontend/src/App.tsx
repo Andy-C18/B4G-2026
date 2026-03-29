@@ -11,6 +11,7 @@ import AppointmentDetail from './pages/AppointmentDetail';
 import Community from './pages/Community';
 import PostDetail from './pages/PostDetail';
 import Profile from './pages/Profile';
+import PatientIntake from './pages/PatientIntake';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/intake" element={<PatientIntake />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route
         element={
