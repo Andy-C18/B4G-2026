@@ -1,3 +1,5 @@
+import { DEMO_PATIENT_ID } from '../lib/demoUser';
+
 import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -15,35 +17,55 @@ import type { Appointment, Patient, Doctor } from '../types';
 
 type ProfileType = Patient | Doctor;
 
+type AppointmentWithRelations = Appointment & {
+  doctors?: {
+    id: string;
+    fullName?: string;
+    practiceName?: string;
+    speciality?: string;
+    phone?: string;
+    location?: string;
+  } | null;
+};
+
 const isDoctor = (p: ProfileType): p is Doctor => 'speciality' in p;
 
 export default function Dashboard() {
   const { profile } = useAuth();
   const location = useLocation();
 
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const activeUserId = DEMO_PATIENT_ID;
 
   useEffect(() => {
     async function load() {
-      if (!profile) return;
+      setLoading(true);
 
       const { data, error } = await supabase
         .from('appointment_data')
-        .select('*')
-        .or(`patientId.eq.${profile.id},doctorId.eq.${profile.id}`)
+        .select(`
+          *,
+          doctors (*)
+        `)
+        .or(`patientId.eq.${activeUserId},doctorId.eq.${activeUserId}`)
         .order('createdAt', { ascending: false });
+
+      console.log('Dashboard activeUserId:', activeUserId);
+      console.log('Dashboard appointments:', data);
+      console.log('Dashboard error:', error);
 
       if (error) {
         console.error('Failed to load dashboard appointments:', error);
       }
 
-      setAppointments((data as Appointment[]) || []);
+      setAppointments((data as AppointmentWithRelations[]) || []);
       setLoading(false);
     }
 
     load();
-  }, [profile]);
+  }, [activeUserId]);
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -63,8 +85,13 @@ export default function Dashboard() {
     }
   };
 
-  const isPatient = profile && !isDoctor(profile as any);
-  const firstName = profile?.fullName?.split(' ')[0] || 'User';
+  const displayStatus = (s: string) => {
+    if (s === 'booked') return 'confirmed';
+    return s;
+  };
+
+  const isPatient = !profile || !isDoctor(profile as any);
+  const firstName = profile?.fullName?.split(' ')[0];
 
   const currentAppointments = appointments.filter(
     (a) => a.status === 'booked' || a.status === 'confirmed'
@@ -78,19 +105,15 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Success banner after booking */}
       {location.state?.bookingSuccess && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded-xl px-4 py-3">
           <div className="flex items-center gap-2">
             <CheckCircle className="w-5 h-5" />
-            <span className="font-medium">
-              Appointment booked successfully.
-            </span>
+            <span className="font-medium">Appointment booked successfully.</span>
           </div>
         </div>
       )}
 
-      {/* Welcome */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold mb-1">
           Welcome back, {firstName}! 👋
@@ -113,7 +136,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Quick stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           {
@@ -153,7 +175,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Quick actions (patients only) */}
       {isPatient && (
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Actions</h2>
@@ -200,7 +221,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Current appointments */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-800">Current Appointments</h2>
@@ -215,6 +235,7 @@ export default function Dashboard() {
           <div className="card text-center text-gray-500 py-10">
             <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
             <p>No current appointments.</p>
+            <p className="text-xs text-gray-400 mt-2">Using user id: {activeUserId}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -228,6 +249,13 @@ export default function Dashboard() {
                   <p className="font-medium text-gray-800">
                     {appt.title || 'Appointment'}
                   </p>
+
+                  <p className="text-sm text-gray-500">
+                    {appt.doctors?.fullName
+                      ? `Dr. ${appt.doctors.fullName}${appt.doctors.practiceName ? ` · ${appt.doctors.practiceName}` : ''}`
+                      : 'Doctor not assigned'}
+                  </p>
+
                   <p className="text-sm text-gray-500">
                     {appt.selected_time
                       ? `Scheduled for ${appt.selected_time}`
@@ -240,7 +268,7 @@ export default function Dashboard() {
                     appt.status
                   )}`}
                 >
-                  {appt.status}
+                  {displayStatus(appt.status)}
                 </span>
               </Link>
             ))}
@@ -248,7 +276,6 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Past appointments */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-gray-800">Past Appointments</h2>
@@ -276,6 +303,13 @@ export default function Dashboard() {
                   <p className="font-medium text-gray-800">
                     {appt.title || 'Appointment'}
                   </p>
+
+                  <p className="text-sm text-gray-500">
+                    {appt.doctors?.fullName
+                      ? `Dr. ${appt.doctors.fullName}${appt.doctors.practiceName ? ` · ${appt.doctors.practiceName}` : ''}`
+                      : 'Doctor not assigned'}
+                  </p>
+
                   <p className="text-sm text-gray-500">
                     {appt.selected_time
                       ? `Occurred on ${appt.selected_time}`
@@ -288,7 +322,7 @@ export default function Dashboard() {
                     appt.status
                   )}`}
                 >
-                  {appt.status}
+                  {displayStatus(appt.status)}
                 </span>
               </Link>
             ))}
