@@ -27,6 +27,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/forum', forumRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/reports', reportsRouter);
 
 // 404 handler
 app.use((_req, res) => {
