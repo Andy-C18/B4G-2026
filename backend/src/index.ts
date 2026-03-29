@@ -9,6 +9,8 @@ import helmet from 'helmet';
 import appointmentsRouter from './routes/appointments';
 import forumRouter from './routes/forum';
 import profileRouter from './routes/profile';
+import reportsRouter from './routes/reports';
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,6 +29,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/forum', forumRouter);
 app.use('/api/profile', profileRouter);
+app.use('/api/reports', reportsRouter);
 
 // 404 handler
 app.use((_req, res) => {
