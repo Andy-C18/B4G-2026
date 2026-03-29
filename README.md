@@ -1,4 +1,4 @@
-# Build4Good '26 - Nurser-E
+# Nurser-E (Build4Good '26)
 
 An AI-powered healthcare app that serves as a one-stop shop for patients by streamlining communication with doctors, appointment scheduling, providing a reddit-style discussions forum etc.
 
