@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import appointmentsRouter from './routes/appointments';
 import forumRouter from './routes/forum';
 import profileRouter from './routes/profile';
+import reportsRouter from './routes/reports';
 
 dotenv.config();
 
