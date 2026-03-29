@@ -1,4 +1,4 @@
-# Build4Good '26 - Nurser
+# Build4Good '26 - Nurser-E
 
 An AI-powered patient-side healthcare web app that streamlines communication with doctors and organizes appointments.
 
