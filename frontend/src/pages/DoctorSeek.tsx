@@ -91,27 +91,17 @@ export default function DoctorSeek() {
 
       const structuredReport = buildStructuredReport(symptomsText, followUpAnswers);
 
-      const { data: report, error: reportError } = await supabase
-        .from('symptom_reports')
-        .insert({
-          patient_id: profile.id,
-          symptoms_text: symptomsText,
-          photo_urls: uploadedPhotoUrls.length ? uploadedPhotoUrls : null,
-          video_url: uploadedVideoUrl || null,
-          follow_up_answers: followUpAnswers,
-          structured_report: structuredReport,
-          suggested_doctor_type: suggestedType,
-        })
-        .select()
-        .single();
-
-      if (reportError) throw reportError;
-
-      // Create an appointment request
-      const { error: apptError } = await supabase.from('appointments').insert({
-        patient_id: profile.id,
-        symptom_report_id: report.id,
-        status: 'requested',
+      // Create an appointment with symptom data
+      const { error: apptError } = await supabase.from('appointment_data').insert({
+        patientId: profile.id,
+        title: suggestedType ? `Consult ${suggestedType}` : 'Doctor Consultation',
+        reportType: 'symptom',
+        status: 'draft',
+        follow_up_questions: followUpQuestions,
+        follow_up_answers: followUpAnswers,
+        formatted_report: structuredReport,
+        recommended_speciality: suggestedType,
+        needAsap: false,
       });
       if (apptError) throw apptError;
 
@@ -140,9 +130,8 @@ export default function DoctorSeek() {
       <div className="flex items-center gap-2 mb-8">
         {STEPS.map((label, idx) => (
           <div key={label} className="flex items-center gap-2 flex-1">
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold flex-shrink-0 ${
-              idx < step ? 'bg-green-500 text-white' : idx === step ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
-            }`}>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold flex-shrink-0 ${idx < step ? 'bg-green-500 text-white' : idx === step ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+              }`}>
               {idx < step ? <CheckCircle className="w-4 h-4" /> : idx + 1}
             </div>
             <span className={`text-xs hidden sm:block ${idx === step ? 'text-primary-600 font-medium' : 'text-gray-400'}`}>
@@ -274,11 +263,10 @@ export default function DoctorSeek() {
                           key={opt}
                           type="button"
                           onClick={() => setFollowUpAnswers((prev) => ({ ...prev, [q.id]: opt }))}
-                          className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                            followUpAnswers[q.id] === opt
+                          className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${followUpAnswers[q.id] === opt
                               ? 'border-primary-500 bg-primary-50 text-primary-700'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
+                            }`}
                         >
                           {opt}
                         </button>

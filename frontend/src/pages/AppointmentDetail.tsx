@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
 import type { Appointment, MedicalRecord, DoctorRating } from '../types';
+import { isDoctor } from '../types';
 
 export default function AppointmentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -70,20 +71,20 @@ export default function AppointmentDetail() {
     if (!error) {
       setAppt((prev) => prev ? { ...prev, status: 'done', completed_at: new Date().toISOString() } : prev);
       // Prompt patient to upload prescription
-      if (profile?.role === 'patient') setShowPrescriptionModal(true);
+      if (profile && !isDoctor(profile)) setShowPrescriptionModal(true);
     }
     setSaving(false);
   };
 
   const handleDoneClick = () => {
-    if (profile?.role === 'doctor') {
+    if (profile && isDoctor(profile)) {
       handleMarkDone();
     }
   };
 
   // Watch appt status changes to show modal for patient
   useEffect(() => {
-    if (appt?.status === 'done' && profile?.role === 'patient' && !record) {
+    if (appt?.status === 'done' && profile && !isDoctor(profile) && !record) {
       // Show prescription upload if not already submitted
     }
   }, [appt?.status]);
@@ -122,6 +123,26 @@ export default function AppointmentDetail() {
       });
       if (recError) throw recError;
 
+      // Update patient's medical history with this appointment summary
+      const { data: patientData } = await supabase
+        .from('patients')
+        .select('medicalHistory')
+        .eq('id', profile.id)
+        .single();
+
+      const currentHistory = (patientData?.medicalHistory as Record<string, string>) || {};
+      const appointmentSummary = `${new Date().toLocaleDateString()}: ${diagnosis || 'Visit'} - ${appt.doctor?.fullName || 'Doctor'}`;
+      const updatedHistory = {
+        ...currentHistory,
+        [`entry_${Date.now()}`]: appointmentSummary,
+      };
+
+      const { error: historyError } = await supabase
+        .from('patients')
+        .update({ medicalHistory: updatedHistory })
+        .eq('id', profile.id);
+      if (historyError) throw historyError;
+
       setShowPrescriptionModal(false);
       setShowRatingModal(true);
       await load();
@@ -140,7 +161,7 @@ export default function AppointmentDetail() {
       const { error: ratError } = await supabase.from('doctor_ratings').insert({
         appointment_id: appt.id,
         patient_id: profile.id,
-        doctor_id: appt.doctor_id,
+        doctor_id: appt.doctorId,
         rating: ratingValue,
         comment: ratingComment || null,
       });
@@ -164,21 +185,20 @@ export default function AppointmentDetail() {
     structured_report?: Record<string, unknown>;
   }
 
-  const report = appt.symptom_report as ReportShape | undefined;
-  const patientProfile = appt.patient as Record<string, string> | undefined;
-  const doctorProfile = appt.doctor as Record<string, string> | undefined;
+  const report = appt.pre_appointment_report as ReportShape | undefined;
+  const patientProfile = appt.patient;
+  const doctorProfile = appt.doctor;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="btn-secondary text-sm">← Back</button>
-        <span className={`text-sm font-semibold px-3 py-1 rounded-full capitalize ${
-          appt.status === 'done' ? 'bg-green-50 text-green-700' :
+        <span className={`text-sm font-semibold px-3 py-1 rounded-full capitalize ${appt.status === 'done' ? 'bg-green-50 text-green-700' :
           appt.status === 'confirmed' ? 'bg-blue-50 text-blue-700' :
-          appt.status === 'requested' ? 'bg-amber-50 text-amber-700' :
-          'bg-gray-100 text-gray-600'
-        }`}>{appt.status}</span>
+            appt.status === 'requested' ? 'bg-amber-50 text-amber-700' :
+              'bg-gray-100 text-gray-600'
+          }`}>{appt.status}</span>
       </div>
 
       {/* Participants */}
@@ -191,7 +211,7 @@ export default function AppointmentDetail() {
             </div>
             <div>
               <p className="text-xs text-gray-400">Patient</p>
-              <p className="font-medium text-gray-800">{patientProfile?.full_name || '—'}</p>
+              <p className="font-medium text-gray-800">{patientProfile?.fullName || '—'}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -201,10 +221,10 @@ export default function AppointmentDetail() {
             <div>
               <p className="text-xs text-gray-400">Doctor</p>
               <p className="font-medium text-gray-800">
-                {doctorProfile?.full_name ? `Dr. ${doctorProfile.full_name}` : 'Unassigned'}
+                {doctorProfile?.fullName ? `Dr. ${doctorProfile.fullName}` : 'Unassigned'}
               </p>
-              {doctorProfile?.specialty && (
-                <p className="text-xs text-gray-500">{doctorProfile.specialty}</p>
+              {doctorProfile?.speciality && (
+                <p className="text-xs text-gray-500">{doctorProfile.speciality}</p>
               )}
             </div>
           </div>
@@ -214,7 +234,7 @@ export default function AppointmentDetail() {
             </div>
             <div>
               <p className="text-xs text-gray-400">Requested</p>
-              <p className="font-medium text-gray-800">{new Date(appt.requested_at).toLocaleDateString()}</p>
+              <p className="font-medium text-gray-800">{new Date(appt.requested_at || appt.createdAt).toLocaleDateString()}</p>
             </div>
           </div>
           {appt.completed_at && (
@@ -283,7 +303,7 @@ export default function AppointmentDetail() {
       )}
 
       {/* Doctor actions */}
-      {profile?.role === 'doctor' && appt.status !== 'done' && appt.status !== 'cancelled' && (
+      {profile && isDoctor(profile) && appt.status !== 'done' && appt.status !== 'cancelled' && (
         <div className="card border-2 border-green-200 bg-green-50">
           <h3 className="font-semibold text-green-800 mb-2">Doctor Actions</h3>
           <p className="text-sm text-green-700 mb-4">
@@ -301,7 +321,7 @@ export default function AppointmentDetail() {
       )}
 
       {/* Patient post-appointment actions */}
-      {profile?.role === 'patient' && appt.status === 'done' && !record && (
+      {profile && !isDoctor(profile) && appt.status === 'done' && !record && (
         <div className="card border-2 border-amber-200 bg-amber-50">
           <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
             <Clock className="w-4 h-4" /> Upload Prescription
@@ -365,7 +385,7 @@ export default function AppointmentDetail() {
             Doctor Rating
           </h2>
           <div className="flex items-center gap-2 mb-2">
-            {[1,2,3,4,5].map((n) => (
+            {[1, 2, 3, 4, 5].map((n) => (
               <Star key={n} className={`w-5 h-5 ${n <= rating.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
             ))}
             <span className="text-gray-700 font-medium ml-1">{rating.rating}/5</span>
@@ -424,10 +444,10 @@ export default function AppointmentDetail() {
               <button onClick={() => setShowRatingModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
             </div>
             <p className="text-gray-500 text-sm mb-4">
-              How was your experience with Dr. {(appt.doctor as unknown as Record<string,string>)?.full_name}?
+              How was your experience with Dr. {appt.doctor?.fullName}?
             </p>
             <div className="flex gap-2 mb-4">
-              {[1,2,3,4,5].map((n) => (
+              {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} onClick={() => setRatingValue(n)}>
                   <Star className={`w-8 h-8 transition-colors ${n <= ratingValue ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
                 </button>

@@ -24,7 +24,7 @@ export default function Community() {
   async function loadPosts() {
     let query = supabase
       .from('forum_posts')
-      .select('*, author:author_id(full_name,avatar_url,role)')
+      .select('*, author:author_id(fullName)')
       .order('created_at', { ascending: false });
 
     if (searchQ) query = query.ilike('title', `%${searchQ}%`);
@@ -100,9 +100,8 @@ export default function Community() {
                     key={t}
                     type="button"
                     onClick={() => toggleTag(t)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                      selectedTags.includes(t) ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
-                    }`}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${selectedTags.includes(t) ? 'border-primary-500 bg-primary-50 text-primary-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}
                   >
                     {t}
                   </button>
@@ -195,17 +194,14 @@ export default function Community() {
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <div className="flex items-center gap-2">
                         <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-xs">
-                          {author?.full_name?.[0] || 'U'}
+                          {author?.fullName?.[0] || 'U'}
                         </div>
-                        <span>{author?.full_name || 'Unknown'}</span>
-                        {author?.role === 'doctor' && (
-                          <span className="bg-blue-50 text-blue-600 px-1.5 rounded">Doctor</span>
-                        )}
+                        <span>{author?.fullName || 'Unknown'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
                         <Link to={`/community/post/${post.id}`} className="hover:text-primary-500">
-                          {post.comment_count ?? 0} comments
+                          View thread
                         </Link>
                         <span className="ml-2">{new Date(post.created_at).toLocaleDateString()}</span>
                       </div>

@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { Calendar, Search, FileText, Activity, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
-import type { Appointment } from '../types';
+import type { Appointment, Patient, Doctor } from '../types';
+
+type ProfileType = Patient | Doctor;
+
+const isDoctor = (p: ProfileType): p is Doctor => 'speciality' in p;
 
 export default function Dashboard() {
   const { profile } = useAuth();
@@ -13,12 +17,11 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       if (!profile) return;
-      const col = profile.role === 'patient' ? 'patient_id' : 'doctor_id';
       const { data } = await supabase
-        .from('appointments')
-        .select('*, patient:patient_id(full_name,avatar_url), doctor:doctor_id(full_name,specialty)')
-        .eq(col, profile.id)
-        .order('requested_at', { ascending: false })
+        .from('appointment_data')
+        .select('*')
+        .or(`patientId.eq.${profile.id},doctorId.eq.${profile.id}`)
+        .order('createdAt', { ascending: false })
         .limit(5);
       setAppointments((data as Appointment[]) || []);
       setLoading(false);
@@ -28,6 +31,7 @@ export default function Dashboard() {
 
   const statusColor = (s: string) => {
     switch (s) {
+      case 'draft': return 'text-gray-700 bg-gray-50';
       case 'requested': return 'text-amber-700 bg-amber-50';
       case 'confirmed': return 'text-blue-700 bg-blue-50';
       case 'done': return 'text-green-700 bg-green-50';
@@ -36,19 +40,22 @@ export default function Dashboard() {
     }
   };
 
+  const isPatient = profile && !isDoctor(profile as any);
+  const firstName = profile?.fullName?.split(' ')[0] || 'User';
+
   return (
     <div className="space-y-8">
       {/* Welcome */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 text-white">
         <h1 className="text-2xl font-bold mb-1">
-          Welcome back, {profile?.full_name?.split(' ')[0]}! 👋
+          Welcome back, {firstName}! 👋
         </h1>
         <p className="text-primary-100">
-          {profile?.role === 'patient'
+          {isPatient
             ? 'How are you feeling today? Describe your symptoms to get started.'
-            : `Managing appointments as ${profile?.specialty || 'Doctor'}.`}
+            : `Managing appointments as ${(profile as any)?.speciality || 'Doctor'}.`}
         </p>
-        {profile?.role === 'patient' && (
+        {isPatient && (
           <Link
             to="/doctor-seek"
             className="inline-flex items-center gap-2 mt-4 bg-white text-primary-700 px-4 py-2 rounded-lg font-medium hover:bg-primary-50 transition-colors text-sm"
@@ -70,10 +77,10 @@ export default function Dashboard() {
             color: 'text-primary-600 bg-primary-50',
           },
           {
-            label: 'Requested',
-            value: appointments.filter((a) => a.status === 'requested').length,
+            label: 'Draft',
+            value: appointments.filter((a) => a.status === 'draft').length,
             icon: Clock,
-            color: 'text-amber-600 bg-amber-50',
+            color: 'text-gray-600 bg-gray-50',
           },
           {
             label: 'Confirmed',
@@ -101,7 +108,7 @@ export default function Dashboard() {
       </div>
 
       {/* Quick actions (patients only) */}
-      {profile?.role === 'patient' && (
+      {isPatient && (
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-3">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -150,7 +157,7 @@ export default function Dashboard() {
           <div className="card text-center text-gray-500 py-10">
             <Calendar className="w-10 h-10 mx-auto mb-3 text-gray-300" />
             <p>No appointments yet.</p>
-            {profile?.role === 'patient' && (
+            {isPatient && (
               <Link to="/doctor-seek" className="btn-primary mt-3 inline-flex">
                 Create your first report
               </Link>
@@ -166,12 +173,10 @@ export default function Dashboard() {
               >
                 <div>
                   <p className="font-medium text-gray-800">
-                    {profile?.role === 'patient'
-                      ? `Dr. ${(appt.doctor as { full_name?: string })?.full_name || 'Unassigned'}`
-                      : (appt.patient as { full_name?: string })?.full_name}
+                    {appt.title || 'Appointment'}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {new Date(appt.requested_at).toLocaleDateString()}
+                    {new Date(appt.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 <span className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${statusColor(appt.status)}`}>
